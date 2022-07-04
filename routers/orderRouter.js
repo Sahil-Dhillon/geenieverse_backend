@@ -54,7 +54,7 @@ orderRouter.get(
 
 orderRouter.post(
     '/initiateTransaction/:id',
-    isAuth,
+    // isAuth,
     expressAsyncHandler(async (req, res) => {
         const order = await Order.findById(req.params.id);
         const user = await User.findById(order.user)
@@ -117,7 +117,7 @@ orderRouter.post(
 
 orderRouter.post(
     '/initiateTransactionApp/:id',
-    isAuth,
+    // isAuth,
     expressAsyncHandler(async (req, res) => {
         console.log(req.params.id)
         const order = await Order.findById(req.params.id);
