@@ -54,7 +54,7 @@ orderRouter.get(
 
 orderRouter.post(
     '/initiateTransaction/:id',
-    // isAuth,
+    isAuth,
     expressAsyncHandler(async (req, res) => {
         const order = await Order.findById(req.params.id);
         const user = await User.findById(order.user)
@@ -121,9 +121,7 @@ orderRouter.post(
     expressAsyncHandler(async (req, res) => {
         console.log(req.params.id)
         const order = await Order.findById(req.params.id);
-        console.log(order)
         const user = await User.findById(order.user)
-        console.log(user)
         if (order) {
             var paytmParams = {};
             paytmParams.body = {
