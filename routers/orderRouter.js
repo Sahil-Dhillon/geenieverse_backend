@@ -94,26 +94,6 @@ orderRouter.post(
                         'Content-Length': post_data.length
                     }
                 };
-                // var axiosConfig = {
-                //     /* for Production */
-                //     // hostname: 'securegw.paytm.in',
-                //     /* for Staging */
-                //     baseURL: 'https://securegw-stage.paytm.in',
-                //     method: 'POST',
-                //     port: 443,
-                //     path: `/theia/api/v1/initiateTransaction?mid=${process.env.PAYTM_MERCHANT_ID}&orderId=${req.params.id}`,
-                //     headers: {
-                //         'Content-Type': 'application/json',
-                //         'Content-Length': post_data.length
-                //     }
-                // };
-                // try {
-                //     const data = await axios(axiosConfig,async (req,res)=>{
-                //     });
-                //     res.status(200).json(data);
-                // } catch (err) {
-                //     res.status(500).json({ message: err });
-                // }
                 var response = "";
                 var post_req = https.request(options, function (post_res) {
                     post_res.on('data', function (chunk) {
@@ -134,6 +114,69 @@ orderRouter.post(
         }
     })
 )
+
+orderRouter.post(
+    '/initiateTransactionApp/:id',
+    // isAuth,
+    expressAsyncHandler(async (req, res) => {
+        const order = await Order.findById(req.params.id);
+        const user = await User.findById(order.user)
+        if (order) {
+            var paytmParams = {};
+            paytmParams.body = {
+                "requestType": "Payment",
+                "mid": process.env.PAYTM_MERCHANT_ID,
+                "websiteName": "WEBSTAGING",
+                "orderId": req.params.id,
+                "callbackUrl": `https://securegw-stage.paytm.in/theia/paytmCallback?ORDER_ID=${req.params.id}`,
+                "txnAmount": {
+                    "value": order.totalPrice,
+                    "currency": "INR",
+                },
+                "userInfo": {
+                    "custId": order.user,
+                    "email": user.email
+                },
+            }
+            PaytmChecksum.generateSignature(JSON.stringify(paytmParams.body), process.env.PAYTM_MERCHANT_KEY).then(function (checksum) {
+                paytmParams.head = {
+                    "signature": checksum
+                }
+                var post_data = JSON.stringify(paytmParams);
+                var options = {
+                    /* for Staging */
+                    hostname: 'securegw-stage.paytm.in',
+                    /* for Production */
+                    // hostname: 'securegw.paytm.in',
+                    port: 443,
+                    path: `/theia/api/v1/initiateTransaction?mid=${process.env.PAYTM_MERCHANT_ID}&orderId=${req.params.id}`,
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Content-Length': post_data.length
+                    }
+                };
+                var response = "";
+                var post_req = https.request(options, function (post_res) {
+                    post_res.on('data', function (chunk) {
+                        response += chunk.toString();
+                    });
+                    post_res.on('end', function () {
+                        console.log('Response:---- ', response);
+                        res.send(response)
+                    });
+                    // console.log(post_res)
+                });
+                post_req.write(post_data);
+                // res.send(response)
+                post_req.end();
+            })
+        } else {
+            res.status(404).send({ message: 'Order Not Found' });
+        }
+    })
+)
+
 orderRouter.post('/:id/transactionStatus')
 orderRouter.put(
     '/:id/PaymentStatus',
@@ -213,5 +256,14 @@ orderRouter.get(
         }
     })
 );
+/*
+orderRouter.get('/paytmCallback/:id',expressAsyncHandler(async (req, res) => {
+        const order = await Order.findById(req.params.id);
+        if (order) {
+
+        } else {
+            res.status(404).send({ message: 'Order Not Found' });
+        }
+    }))*/
 
 export default orderRouter;
