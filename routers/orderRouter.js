@@ -117,7 +117,7 @@ orderRouter.post(
 
 orderRouter.post(
     '/initiateTransactionApp/:id',
-    // isAuth,
+    isAuth,
     expressAsyncHandler(async (req, res) => {
         const order = await Order.findById(req.params.id);
         const user = await User.findById(order.user)
@@ -128,7 +128,7 @@ orderRouter.post(
                 "mid": process.env.PAYTM_MERCHANT_ID,
                 "websiteName": "WEBSTAGING",
                 "orderId": req.params.id,
-                "callbackUrl": `https://securegw-stage.paytm.in/theia/paytmCallback?ORDER_ID=${req.params.id}`,
+                "callbackUrl": "https://securegw-stage.paytm.in/theia/paytmCallback?ORDER_ID=" + req.params.id,
                 "txnAmount": {
                     "value": order.totalPrice,
                     "currency": "INR",
@@ -138,6 +138,7 @@ orderRouter.post(
                     "email": user.email
                 },
             }
+            console.log(paytmParams.body)
             PaytmChecksum.generateSignature(JSON.stringify(paytmParams.body), process.env.PAYTM_MERCHANT_KEY).then(function (checksum) {
                 paytmParams.head = {
                     "signature": checksum
